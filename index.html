@@ -4,11 +4,32 @@
 <head>
     <meta charset="utf-8" />
     <title></title>
+    <link rel="stylesheet" type="text/css" href="./css/style.css"/>
 </head>
 <body>
+    <canvas id="main" class="fit-window"></canvas>
+
     <script type="text/javascript" src="./js/renderJS.js"></script>
     <script type="text/javascript">
-        renderJS.test();
+        var view = renderJS.create_view('main', '2d');
+
+        var textModel = {
+            text : 'Hello, world!',
+            font: renderJS.create_font('Arial', 8, 'cornflowerblue', 'blue'),
+            position: { x: 75, y: 50 },
+
+            radius : 30,
+            start_angle : Math.PI * 2,
+            stop_angle : Math.PI / 8
+        };
+
+        var widget = renderJS.create_widget('welcome_message', 'text/circle', textModel);
+
+        renderJS.render_widget(view, widget);
+
+
+        var pen = renderJS.create_pen(1, 'yellow', 'blue');
+        renderJS.circle(view, pen, textModel.position, textModel.radius - 7);
     </script>
 </body>
 </html>
