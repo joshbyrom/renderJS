@@ -13,7 +13,7 @@
     <script type="text/javascript">
         var view = renderJS.create_view('main', '2d');
 
-        var textModel = {
+        var text_model = {
             text : 'Hello, world!',
             font: renderJS.create_font('Arial', 8, 'cornflowerblue', 'blue'),
             position: { x: 75, y: 50 },
@@ -23,13 +23,10 @@
             stop_angle : Math.PI / 8
         };
 
-        var widget = renderJS.create_widget('welcome_message', 'text/circle', textModel);
-
-        renderJS.render_widget(view, widget);
-
 
         var pen = renderJS.create_pen(1, 'yellow', 'blue');
-        renderJS.circle(view, pen, textModel.position, textModel.radius - 7);
+        renderJS.circle(view, pen, text_model.position, text_model.radius);
+        renderJS.circle_text(view, text_model.text, text_model.font, text_model.position, text_model.radius - 7, text_model.start_angle, text_model.stop_angle);
     </script>
 </body>
 </html>

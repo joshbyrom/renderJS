@@ -1,7 +1,6 @@
 ﻿(function (window, undefined) { // window == context
     var renderJS = function ctor() {
         this._id = 0;
-        this._widgets = [];
 
         this._subs = {};
     };
@@ -178,83 +177,6 @@
         return new view(element_name, context_type);
     };
 
-    // a widget..........................................................................
-    renderJS.prototype.create_widget = function (name, type, model) {
-        var widget = function () {
-            this._id = renderJS._id++;      // should not change
-            this._type = type;  // should not change
-
-            this.name = name;
-            this.model = model;
-
-            this.parent = undefined;
-        };
-
-        widget.prototype.create_widget = function (name, type, model) {
-            var result = renderJS.create_widget(name, type, model);
-
-            result.parent = this;
-
-            return result;
-        };
-
-        widget.prototype.get_id = function () { return this._id; }
-        widget.prototype.get_type = function () { return this._type; }
-
-        widget.prototype.is_type = function (typename) { return this._type === typename; }
-
-        widget.prototype.climb = function (callback) {
-            var up = this.parent;
-
-            while (up) {
-                callback(up);
-                up = up.parent;
-            }
-        };
-        
-        // inst a new object
-        var result = new widget();
-        this._widgets.push(result);
-        return result;
-    };
-
-    renderJS.prototype.remove_widget = function (widget) {
-        // todo
-    };
-    
-    // widget access.....................................................................
-    renderJS.prototype.widgets = function (callback) {
-        var widget,
-            result,
-            index,
-            length = widget.length;
-
-        for (; index < length; ++index) {
-            widget = widgets[index];
-            result = callback(widget);
-
-            if (result) return result;
-        }
-    };
-
-    renderJS.prototype.get_widgets_by_name = function (name) {
-        var result = [];
-
-        widgets(function (widget) {
-            if (widget.get_name() === name) {
-                result.push(widget);
-            }
-        });
-
-        return result;
-    };
-
-    renderJS.prototype.get_widget_by_id = function (id) {
-        return widgets(function (widget) {
-            if (widget.get_id() === id) return widget;
-        });
-    };
-
     // drawing pens and fonts............................................................
     renderJS.prototype.create_font = function(name, size, fillstyle, strokestyle, align, baseline) {
         var font = function() {
@@ -280,16 +202,6 @@
     }
 
     // render functions..................................................................
-    renderJS.prototype.render_widget = function (view, widget) {
-        var model = widget.model;
-
-        if (widget.is_type('text')) {
-            this.text(view, model.text, model.font, model.position);
-        } else if (widget.is_type('text/circle')) {
-            this.circle_text(view, model.text, model.font, model.position, model.radius, model.start_angle, model.stop_angle);
-        };
-    };
-
     renderJS.prototype.textsize = function (view, model) {
         var context = view.get_context(),
             result;
@@ -371,6 +283,47 @@
         context.beginPath();
         context.arc(position.x, position.y, radius, 0, Math.PI * 2, true);
         context.stroke();
+
+        if (pen.fillStyle) context.fill();
+
+        context.restore();
+    };
+
+    renderJS.prototype.rect = function (view, pen, top_left, bot_right) {
+        var context = view.get_context();
+        context.save();
+
+        context.lineWidth = pen.lineWidth;
+        if (pen.fillStyle) context.fillStyle = pen.fillStyle;
+        context.strokeStyle = pen.strokeStyle;
+
+        context.beginPath();
+        context.moveTo(top_left.x, top_left.y);
+        context.lineTo(bot_right.x, top_left.y);
+        context.lineTo(bot_right.x, bot_right.y);
+        context.lineTo(top_left.x, bot_right.y);
+
+        context.closePath();
+
+        if (pen.fillStyle) context.fill();
+
+        context.restore();
+    };
+
+    renderJS.prototype.triangle = function (view, pen, a, b, c) {
+        var context = view.get_context();
+        context.save();
+
+        context.lineWidth = pen.lineWidth;
+        if (pen.fillStyle) context.fillStyle = pen.fillStyle;
+        context.strokeStyle = pen.strokeStyle;
+
+        context.beginPath();
+        context.moveTo(a.x, a.y);
+        context.lineTo(b.x, b.y);
+        context.lineTo(c.x, c.y);
+
+        context.closePath();
 
         if (pen.fillStyle) context.fill();
 
