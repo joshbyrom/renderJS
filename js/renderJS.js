@@ -93,7 +93,9 @@
     // the view object...................................................................
     renderJS.prototype.create_view = function view_closure(element_name, context_type) {
         var view = function ctor(element_name, context_type) {
-            this._element = undefined;
+            this.back_buffer = document.createElement('canvas');
+
+            this._element = undefined;  // this is 'set' the first time get_element is called
             this._context = undefined;
 
             this.element_name = element_name;
@@ -108,6 +110,17 @@
                 this.on_key_up = undefined;
                 this.on_key_press = undefined;
             };
+        };
+
+        view.prototype.update = function () {
+            var canvas = this.get_element();
+
+            if (this.back_buffer.width != canvas.width ||
+                this.back_buffer.height != canvas.height) {
+
+                this.back_buffer.width = canvas.width;
+                this.back_buffer.height = canvas.height;
+            }
         };
 
         view.prototype._setup = function () {
@@ -133,6 +146,12 @@
                     }
                 };
 
+                this._element.onmouseup = function (e) {
+                    if (self.input.on_mouse_up) {
+                        var coords = self.window_to_view_coords(e.clientX, e.clientY);
+                        self.input.on_mouse_up(coords);
+                    }
+                };
                 // TODO -- hook more!
             };
         };
@@ -174,7 +193,82 @@
             };
         };
 
+        view.prototype.flip = function () {
+            var canvas = this.get_element();
+
+            canvas.drawImage(this.back_buffer, 0, 0, canvas.width, canvas.height);
+            this.back_buffer.clearRect(0, 0, this.back_buffer.width, this.back_buffer.height);
+        };
+
         return new view(element_name, context_type);
+    };
+
+    // images............................................................................
+    renderJS.prototype.load_image = function (url, on_load, frame_width, frame_height) {
+        var image = function () {
+            this.url = url;
+            this.loaded = false;
+
+            this.frames = [];
+            this.frame_columns = 0;
+            this.frame_rows = 0;
+
+            this.frame_width = frame_width || undefined;
+            this.frame_height = frame_height || undefined;
+
+            this.number_of_columns = 0;
+            this.number_of_rows = 0;
+
+            this.imageAPI = new Image();
+            this.imageAPI.setAttribute('crossOrigin', 'anonymous');
+            this.imageAPI.setAttribute('src', this.url);
+            this.imageAPI.addEventListener('load',function (e) {
+                if (frame_width === undefined) {
+                    frame_width = this.imageAPI.width;
+                }
+
+                if (frame_height === undefined) {
+                    frame_height = this.imageAPI.height;
+                }
+                
+                this.number_of_columns = this.imageAPI.width / this.frame_width;
+                this.number_of_rows = this.imageAPI.height / this.frame_height;
+
+                this._build_frame_rects();
+                this.loaded = true;
+            }.bind(this));
+        };
+
+        image.prototype._build_frame_rects = function () {
+            var column = 0,
+                row = 0,
+                x = 0,
+                y = 0;
+
+            var frame_rect = function (x, y) {
+                this.x = x;
+                this.y = y;
+            };
+
+            frame_rect.prototype.width = this.frame_width;
+            frame_rect.prototype.height = this.frame_height;
+
+            for (; column < number_of_columns; ++column) {
+                x = column * this.frame_width;
+                for (; row < number_of_rows; ++row) {
+                    y = row * this.frame_height;
+
+                    this.frames.push(new frame_rect(x, y));
+                }
+            }
+        };
+
+        image.prototype.get_frame = function (column, row) {
+            var index = column * this.number_of_rows + row;
+            return { image: this.imageAPI, rect : frames[index] };
+        };
+
+        return new image();
     };
 
     // drawing pens and fonts............................................................
